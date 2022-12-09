@@ -44,7 +44,7 @@ impl Path {
     }
 }
 
-fn solve_part_one(lines: &[String]) {
+fn parse_to_dirs(lines: &[String]) -> Vec<Rc<RefCell<Directory>>> {
     let mut it = lines.iter().peekable();
 
     assert!(it.next().unwrap().as_str() == "$ cd /");
@@ -69,11 +69,14 @@ fn solve_part_one(lines: &[String]) {
             _ => dirs.push(path.add_dir()),
         }
     }
-    println!("{:#?}", dirs.first().unwrap());
+    dirs
+}
 
+fn solve_part_one(lines: &[String]) {
     println!(
         "{}",
-        dirs.iter()
+        parse_to_dirs(lines)
+            .iter()
             .filter_map(|dir| {
                 let dir_size = dir.borrow().sum_files();
                 if dir_size > 100_000 {
@@ -86,7 +89,32 @@ fn solve_part_one(lines: &[String]) {
     );
 }
 
+fn solve_part_two(lines: &[String]) {
+    let dirs = parse_to_dirs(lines);
+    let size = 70_000_000;
+    let needed = 30_000_000;
+    let used = dirs.first().unwrap().borrow().sum_files();
+    let free = size - used;
+    let to_free = needed - free;
+
+    let mut best_fit = size;
+    for dir in dirs {
+        let dir_size = dir.borrow().sum_files();
+        if dir_size < to_free {
+            continue;
+        }
+        best_fit = best_fit.min(dir_size);
+    }
+
+    println!("{}", best_fit);
+}
+
 fn main() {
+    println!("Part one:");
     solve_part_one(&read_lines("src/07/example").unwrap());
     solve_part_one(&read_lines("src/07/input").unwrap());
+
+    println!("Part two:");
+    solve_part_two(&read_lines("src/07/example").unwrap());
+    solve_part_two(&read_lines("src/07/input").unwrap());
 }
