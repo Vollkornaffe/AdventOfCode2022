@@ -71,16 +71,16 @@ fn solve_part_one(lines: &[String]) {
                 .enumerate()
                 .map(|(x, height)| {
                     let mut options = Vec::new();
-                    if x > 0 && height.abs_diff(heights[y][x - 1]) < 2 {
+                    if x > 0 && heights[y][x - 1] < height + 2 {
                         options.push((x - 1, y));
                     }
-                    if x < size_x - 1 && height.abs_diff(heights[y][x + 1]) < 2 {
+                    if x < size_x - 1 && heights[y][x + 1] < height + 2 {
                         options.push((x + 1, y));
                     }
-                    if y > 0 && height.abs_diff(heights[y - 1][x]) < 2 {
+                    if y > 0 && heights[y - 1][x] < height + 2 {
                         options.push((x, y - 1));
                     }
-                    if y < size_y - 1 && height.abs_diff(heights[y + 1][x]) < 2 {
+                    if y < size_y - 1 && heights[y + 1][x] < height + 2 {
                         options.push((x, y + 1));
                     }
                     options
@@ -94,6 +94,7 @@ fn solve_part_one(lines: &[String]) {
 
     let debug_path = |visited: &HashSet<(usize, usize)>,
                       active: &VecDeque<((usize, usize), usize)>| {
+        print!("{}[2J", 27 as char);
         for y in 0..size_y {
             for x in 0..size_x {
                 if (x, y) == start {
