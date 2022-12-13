@@ -1,6 +1,6 @@
 use common::read_lines;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum List {
     Elem(u32),
     List(Vec<List>),
@@ -14,6 +14,12 @@ impl PartialOrd for List {
             (List::Elem(e), list) => List::List(vec![List::Elem(*e)]).partial_cmp(list),
             (list, List::Elem(e)) => list.partial_cmp(&List::List(vec![List::Elem(*e)])),
         }
+    }
+}
+
+impl Ord for List {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 
@@ -78,7 +84,35 @@ fn solve_part_one(lines: &[String]) {
     );
 }
 
+fn solve_part_two(lines: &[String]) {
+    let decoders = [
+        List::List(vec![List::List(vec![List::Elem(2)])]),
+        List::List(vec![List::List(vec![List::Elem(6)])]),
+    ];
+
+    let mut lists: Vec<List> = lines
+        .iter()
+        .filter(|l| !l.is_empty())
+        .map(|l| parse(l))
+        .chain(decoders.iter().cloned())
+        .collect();
+
+    lists.sort();
+    println!(
+        "{}",
+        decoders
+            .iter()
+            .map(|d| lists.iter().position(|l| l == d).unwrap() + 1)
+            .product::<usize>()
+    );
+}
+
 fn main() {
+    println!("Part one:");
     solve_part_one(&read_lines("src/13/example").unwrap());
     solve_part_one(&read_lines("src/13/input").unwrap());
+
+    println!("Part two:");
+    solve_part_two(&read_lines("src/13/example").unwrap());
+    solve_part_two(&read_lines("src/13/input").unwrap());
 }
