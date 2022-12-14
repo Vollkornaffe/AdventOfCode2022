@@ -5,8 +5,8 @@ use std::{
 
 use common::read_lines;
 
-fn solve_part_one(lines: &[String]) {
-    let rocks = lines.iter().fold(HashSet::new(), |set, line| {
+fn parse_rocks(lines: &[String]) -> HashSet<(i64, i64)> {
+    lines.iter().fold(HashSet::new(), |set, line| {
         set.union(
             &line
                 .split(" -> ")
@@ -43,7 +43,11 @@ fn solve_part_one(lines: &[String]) {
         )
         .cloned()
         .collect()
-    });
+    })
+}
+
+fn solve_part_one(lines: &[String]) {
+    let rocks = parse_rocks(lines);
 
     let free_fall = rocks.iter().max_by_key(|pos| pos.1).unwrap().1;
 
@@ -84,7 +88,56 @@ fn solve_part_one(lines: &[String]) {
     println!("{}", sand.len());
 }
 
+fn solve_part_two(lines: &[String]) {
+    let rocks = parse_rocks(lines);
+    let floor = rocks.iter().max_by_key(|pos| pos.1).unwrap().1 + 2;
+
+    let blocked_by_rock = |pos: &(i64, i64)| rocks.contains(pos) || pos.1 == floor;
+
+    let mut sand = HashSet::new();
+
+    loop {
+        let mut current = (500, 0);
+
+        loop {
+            let blocked = |pos| blocked_by_rock(pos) || sand.contains(pos);
+
+            let below = (current.0, current.1 + 1);
+            let left = (current.0 - 1, current.1 + 1);
+            let right = (current.0 + 1, current.1 + 1);
+
+            if !blocked(&below) {
+                current = below;
+                continue;
+            }
+            if !blocked(&left) {
+                current = left;
+                continue;
+            }
+            if !blocked(&right) {
+                current = right;
+                continue;
+            }
+
+            break;
+        }
+
+        sand.insert(current);
+
+        if current == (500, 0) {
+            break;
+        }
+    }
+
+    println!("{}", sand.len());
+}
+
 fn main() {
+    println!("Part one:");
     solve_part_one(&read_lines("src/14/example").unwrap());
     solve_part_one(&read_lines("src/14/input").unwrap());
+
+    println!("Part two:");
+    solve_part_two(&read_lines("src/14/example").unwrap());
+    solve_part_two(&read_lines("src/14/input").unwrap());
 }
