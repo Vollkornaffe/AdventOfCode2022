@@ -53,25 +53,6 @@ fn solve_part_one(lines: &[String]) {
         let mut current = (500, 0);
 
         loop {
-            for y in 0..11 {
-                for x in 490..510 {
-                    if rocks.contains(&(x, y)) {
-                        print!("#");
-                    } else if sand.contains(&(x, y)) {
-                        print!("O");
-                    } else if current == (x, y) {
-                        print!("X");
-                    } else {
-                        print!(".");
-                    }
-                }
-                println!();
-            }
-            {
-                let mut tmp = String::new();
-                io::stdin().read_line(&mut tmp);
-            }
-
             if current.1 > free_fall {
                 break 'outer;
             }
@@ -105,4 +86,5 @@ fn solve_part_one(lines: &[String]) {
 
 fn main() {
     solve_part_one(&read_lines("src/14/example").unwrap());
+    solve_part_one(&read_lines("src/14/input").unwrap());
 }
