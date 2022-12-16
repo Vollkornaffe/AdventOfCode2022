@@ -144,9 +144,9 @@ struct Bruteforce2 {
 }
 
 impl Bruteforce2 {
-    fn step(mut self, network: &Network) -> Self {
+    fn step(mut self, network: &Network) -> usize {
         if self.time == 0 {
-            return self;
+            return self.pressure + self.rate;
         }
 
         self.time -= 1;
@@ -171,6 +171,7 @@ impl Bruteforce2 {
                             && self.goals_and_dists[0].0 != idx
                             && self.goals_and_dists[1].0 != idx
                             && !self.opened.contains(&idx)
+                            && network.rates[idx] > 0
                     })
                     .map(|(idx, &goal)| (idx, goal))
                     .collect()
@@ -211,21 +212,23 @@ impl Bruteforce2 {
                 }
                 .step(network)
             })
-            .max_by_key(|s| s.pressure)
+            .max()
             .unwrap()
     }
 }
 
 fn solve_part_two(network: Network) {
-    let solution = Bruteforce2 {
-        time: 26,
-        pressure: 0,
-        rate: 0,
-        opened: Default::default(),
-        goals_and_dists: [(network.start, 0); 2],
-    }
-    .step(&network);
-    println!("{}", solution.pressure + solution.rate);
+    println!(
+        "{}",
+        Bruteforce2 {
+            time: 26,
+            pressure: 0,
+            rate: 0,
+            opened: Default::default(),
+            goals_and_dists: [(network.start, 0); 2],
+        }
+        .step(&network)
+    );
 }
 
 fn main() {
