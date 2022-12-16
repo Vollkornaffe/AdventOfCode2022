@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 use common::read_lines;
 
@@ -6,7 +6,6 @@ use common::read_lines;
 struct Network {
     start: usize,
     rates: Vec<usize>,
-    connections: Vec<(usize, usize)>,
     shortest: Vec<Vec<usize>>,
 }
 
@@ -15,7 +14,7 @@ impl Network {
         let mut rates = Vec::new();
         let mut connections = Vec::new();
 
-        let mut id_map: HashMap<&str, usize> = lines
+        let id_map: HashMap<&str, usize> = lines
             .iter()
             .enumerate()
             .map(|(i, line)| {
@@ -82,7 +81,6 @@ impl Network {
         Self {
             start: *id_map.get("AA").unwrap(),
             rates,
-            connections,
             shortest,
         }
     }
@@ -123,34 +121,9 @@ impl Bruteforce {
     }
 }
 
-fn solve_part_one(mut network: Network) {
-    println!("{:#?}", network);
-
-    /*let mut current = network.start;
-    let mut t = 30;
-
-    let mut released_pressure = 0;
-
-    while let Some((i, value)) = network.shortest[current]
-        .iter()
-        .enumerate()
-        .filter(|&(_, &cost)| cost < t)
-        .map(|(i, cost)| (i, network.rates[i] * (t - cost - 1)))
-        .inspect(|x| println!("option: {:?}", x))
-        .max_by_key(|(_, value)| *value)
-    {
-        println!("Opening {}, which is going to release {}", i, value);
-        released_pressure += value;
-        network.rates[i] = 0;
-        println!("{} - {}", t, network.shortest[current][i]);
-        t -= network.shortest[current][i] + 1;
-        current = i;
-    }
-
-    println!("{}", released_pressure);*/
-
+fn solve_part_one(network: Network) {
     println!(
-        "{:#?}",
+        "{}",
         Bruteforce {
             time: 30,
             pressure: 0,
@@ -158,9 +131,12 @@ fn solve_part_one(mut network: Network) {
             current: network.start
         }
         .step(&network)
+        .pressure
     );
 }
 
 fn main() {
+    println!("Part one:");
+    solve_part_one(Network::new(&read_lines("src/16/example").unwrap()));
     solve_part_one(Network::new(&read_lines("src/16/input").unwrap()));
 }
