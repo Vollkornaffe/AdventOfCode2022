@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Flatten};
 
 use common::read_lines;
 
@@ -120,7 +120,6 @@ impl Bruteforce {
             .unwrap_or_else(|| self.clone())
     }
 }
-
 fn solve_part_one(network: Network) {
     println!(
         "{}",
@@ -135,8 +134,106 @@ fn solve_part_one(network: Network) {
     );
 }
 
+#[derive(Clone, Debug)]
+struct Bruteforce2 {
+    time: usize,
+    pressure: usize,
+    rate: usize,
+    opened: Vec<usize>,
+    goals_and_dists: [(usize, usize); 2],
+}
+
+impl Bruteforce2 {
+    fn step(mut self, network: &Network) -> Self {
+        if self.time == 0 {
+            return self;
+        }
+
+        self.time -= 1;
+        self.pressure += self.rate;
+
+        for &(goal, dist) in &self.goals_and_dists {
+            if dist == 0 {
+                self.rate += network.rates[goal];
+                self.opened.push(goal);
+            }
+        }
+
+        let get_possibilities = |(goal, dist)| -> Vec<(usize, usize)> {
+            if dist != 0 {
+                vec![(goal, dist - 1)]
+            } else {
+                network.shortest[goal]
+                    .iter()
+                    .enumerate()
+                    .filter(|&(idx, &dist)| {
+                        dist < self.time
+                            && self.goals_and_dists[0].0 != idx
+                            && self.goals_and_dists[1].0 != idx
+                            && !self.opened.contains(&idx)
+                    })
+                    .map(|(idx, &goal)| (idx, goal))
+                    .collect()
+            }
+        };
+        let possibilities_a = get_possibilities(self.goals_and_dists[0]);
+        let possibilities_b = get_possibilities(self.goals_and_dists[1]);
+
+        let hack = |possibilities: Vec<(usize, usize)>| {
+            if possibilities.is_empty() {
+                vec![(0, std::usize::MAX)]
+            } else {
+                possibilities
+            }
+        };
+
+        let possibilities_a = hack(possibilities_a);
+        let possibilities_b = hack(possibilities_b);
+
+        possibilities_a
+            .iter()
+            .flat_map(|&(goal_a, dist_a)| {
+                hack(
+                    possibilities_b
+                        .iter()
+                        .filter(|&(goal_b, _)| goal_a != *goal_b)
+                        .cloned()
+                        .collect(),
+                )
+                .into_iter()
+                .map(|(goal_b, dist_b)| [(goal_a, dist_a), (goal_b, dist_b)])
+                .collect::<Vec<_>>()
+            })
+            .map(|goals_and_dists| {
+                Self {
+                    goals_and_dists,
+                    ..self.clone()
+                }
+                .step(network)
+            })
+            .max_by_key(|s| s.pressure)
+            .unwrap()
+    }
+}
+
+fn solve_part_two(network: Network) {
+    let solution = Bruteforce2 {
+        time: 26,
+        pressure: 0,
+        rate: 0,
+        opened: Default::default(),
+        goals_and_dists: [(network.start, 0); 2],
+    }
+    .step(&network);
+    println!("{}", solution.pressure + solution.rate);
+}
+
 fn main() {
     println!("Part one:");
     solve_part_one(Network::new(&read_lines("src/16/example").unwrap()));
     solve_part_one(Network::new(&read_lines("src/16/input").unwrap()));
+
+    println!("Part two:");
+    solve_part_two(Network::new(&read_lines("src/16/example").unwrap()));
+    solve_part_two(Network::new(&read_lines("src/16/input").unwrap()));
 }
