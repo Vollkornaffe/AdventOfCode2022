@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use common::read_lines;
 
@@ -88,8 +88,45 @@ impl Network {
     }
 }
 
+#[derive(Clone, Debug)]
+struct Bruteforce {
+    time: usize,
+    pressure: usize,
+    opened: Vec<usize>,
+    current: usize,
+}
+
+impl Bruteforce {
+    pub fn step(&self, network: &Network) -> Self {
+        network.shortest[self.current]
+            .iter()
+            .enumerate()
+            .filter(|(idx, _)| network.rates[*idx] > 0 && !self.opened.contains(idx))
+            .filter(|&(_, &dist)| dist < self.time)
+            .map(|(idx, dist)| {
+                let mut new_opened = self.opened.clone();
+                new_opened.push(idx);
+
+                let new_time = self.time - *dist - 1;
+
+                let state = Self {
+                    time: new_time,
+                    pressure: self.pressure + network.rates[idx] * new_time,
+                    opened: new_opened,
+                    current: idx,
+                };
+
+                state.step(network)
+            })
+            .max_by_key(|state| state.pressure)
+            .unwrap_or_else(|| self.clone())
+    }
+}
+
 fn solve_part_one(mut network: Network) {
-    let mut current = network.start;
+    println!("{:#?}", network);
+
+    /*let mut current = network.start;
     let mut t = 30;
 
     let mut released_pressure = 0;
@@ -99,17 +136,31 @@ fn solve_part_one(mut network: Network) {
         .enumerate()
         .filter(|&(_, &cost)| cost < t)
         .map(|(i, cost)| (i, network.rates[i] * (t - cost - 1)))
+        .inspect(|x| println!("option: {:?}", x))
         .max_by_key(|(_, value)| *value)
     {
+        println!("Opening {}, which is going to release {}", i, value);
         released_pressure += value;
         network.rates[i] = 0;
+        println!("{} - {}", t, network.shortest[current][i]);
         t -= network.shortest[current][i] + 1;
         current = i;
     }
 
-    println!("{}", released_pressure);
+    println!("{}", released_pressure);*/
+
+    println!(
+        "{:#?}",
+        Bruteforce {
+            time: 30,
+            pressure: 0,
+            opened: Default::default(),
+            current: network.start
+        }
+        .step(&network)
+    );
 }
 
 fn main() {
-    solve_part_one(Network::new(&read_lines("src/16/example").unwrap()));
+    solve_part_one(Network::new(&read_lines("src/16/input").unwrap()));
 }
