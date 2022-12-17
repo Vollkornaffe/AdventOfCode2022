@@ -127,7 +127,6 @@ fn find_border(map: &HashSet<(i32, i32)>) -> HashSet<(i32, i32)> {
     let mut border = HashSet::new();
 
     while !active.is_empty() {
-        println!("{}", visited.len());
         let (x, y) = active.pop().unwrap();
         visited.insert((x, y));
 
@@ -170,14 +169,21 @@ fn solve_part_two(lines: &[String]) {
     let mut rocks = rocks.iter().cycle();
     let mut map = HashSet::new();
 
+    let mut known_states = HashSet::new();
+
     for _ in 0..10000 {
-        for _ in 0..5 {
-            drop_next(&mut jets, &mut rocks, &mut map);
-        }
-        debug(&map, &HashSet::new());
+        drop_next(&mut jets, &mut rocks, &mut map);
+
         let border = find_border(&map);
-        debug(&map, &border);
+        let min = *border.iter().map(|(_, y)| y).min().unwrap();
+        let mut key: Vec<(i32, i32)> = border.into_iter().map(|(x, y)| (x, y - min)).collect();
+        key.sort();
+
+        if known_states.insert(key) {
+            println!("knew it!");
+        }
     }
+    println!("10000 : {}", known_states.len());
 }
 
 fn main() {
