@@ -127,30 +127,40 @@ fn find_border(map: &HashSet<(i32, i32)>) -> HashSet<(i32, i32)> {
     let mut border = HashSet::new();
 
     while !active.is_empty() {
+        println!("{}", visited.len());
         let (x, y) = active.pop().unwrap();
+        visited.insert((x, y));
 
         if map.contains(&(x, y)) {
             border.insert((x, y));
+            continue;
         }
 
-        for (x, y) in [
-            (x - 1, y - 1),
-            (x + 1, y - 1),
-            (x - 1, y + 1),
-            (x + 1, y + 1),
-        ]
-        .into_iter()
-        {
+        for (x, y) in [(x - 1, y), (x + 1, y), (x, y - 1)].into_iter() {
             if x < 0 || y < 0 || x > 6 || active.contains(&(x, y)) || visited.contains(&(x, y)) {
                 continue;
             }
             active.push((x, y));
         }
-
-        visited.insert((x, y));
     }
 
     border
+}
+
+fn debug(map: &HashSet<(i32, i32)>, border: &HashSet<(i32, i32)>) {
+    for y in -100..1 {
+        for x in 0..7 {
+            if border.contains(&(x, -y)) {
+                print!("@");
+            } else if map.contains(&(x, -y)) {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
+    wait();
 }
 
 fn solve_part_two(lines: &[String]) {
@@ -164,7 +174,9 @@ fn solve_part_two(lines: &[String]) {
         for _ in 0..5 {
             drop_next(&mut jets, &mut rocks, &mut map);
         }
+        debug(&map, &HashSet::new());
         let border = find_border(&map);
+        debug(&map, &border);
     }
 }
 
