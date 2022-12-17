@@ -1,4 +1,8 @@
-use std::{collections::HashSet, hash::Hash, iter::repeat};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    iter::repeat,
+};
 
 use common::{read_lines, wait};
 
@@ -84,7 +88,7 @@ fn drop_next<'a>(
     jets: &mut impl Iterator<Item = &'a i32>,
     rocks: &mut impl Iterator<Item = &'a Rock>,
     map: &mut HashSet<(i32, i32)>,
-) {
+) -> u64 {
     let highpoint = get_highpoint(&map);
 
     let mut rock = Rock(
@@ -97,7 +101,9 @@ fn drop_next<'a>(
             .collect(),
     );
 
+    let mut used_jets = 0;
     loop {
+        used_jets += 1;
         rock.try_move((*jets.next().unwrap(), 0), &map);
         if rock.try_move((0, -1), &map) {
             continue;
@@ -105,6 +111,7 @@ fn drop_next<'a>(
         map.extend(rock.0.iter());
         break;
     }
+    used_jets
 }
 
 fn solve_part_one(lines: &[String]) {
@@ -162,28 +169,80 @@ fn debug(map: &HashSet<(i32, i32)>, border: &HashSet<(i32, i32)>) {
     wait();
 }
 
-fn solve_part_two(lines: &[String]) {
-    let (jets, rocks) = setup(lines);
+#[derive(Debug)]
+struct LoopInfo {
+    start: u64,
+    length: u64,
+    jet: u64,
+    height: u64,
+    increment: u64,
+    border: Vec<(i32, i32)>,
+}
 
-    let mut jets = jets.iter().cycle();
-    let mut rocks = rocks.iter().cycle();
+fn solve_part_two(lines: &[String]) {
+    let (jets_vector, rocks_vector) = setup(lines);
+
+    let num_jets = jets_vector.len();
+
+    let mut jets = jets_vector.iter().cycle();
+    let mut rocks = rocks_vector.iter().cycle();
     let mut map = HashSet::new();
 
-    let mut known_states = HashSet::new();
+    let mut known_states = HashMap::new();
 
-    for _ in 0..10000 {
-        drop_next(&mut jets, &mut rocks, &mut map);
+    let mut rock = 0;
+    let mut jet = 0;
 
-        let border = find_border(&map);
-        let min = *border.iter().map(|(_, y)| y).min().unwrap();
-        let mut key: Vec<(i32, i32)> = border.into_iter().map(|(x, y)| (x, y - min)).collect();
-        key.sort();
+    let loop_info = loop {
+        rock += 1;
+        jet += drop_next(&mut jets, &mut rocks, &mut map);
+        jet %= num_jets as u64;
 
-        if known_states.insert(key) {
-            println!("knew it!");
+        let border = {
+            let border = find_border(&map);
+            let min = *border.iter().map(|(_, y)| y).min().unwrap();
+            let mut border: Vec<(i32, i32)> =
+                border.into_iter().map(|(x, y)| (x, y - min)).collect();
+            border.sort();
+            border
+        };
+
+        let height = get_highpoint(&map) as u64;
+        let key = (rock % 5, jet, border.clone());
+        let value = (rock, height);
+        if let Some((prev_rock, prev_height)) = known_states.insert(key, value) {
+            break LoopInfo {
+                start: prev_rock,
+                length: rock - prev_rock,
+                jet,
+                height: prev_height,
+                increment: height - prev_height,
+                border,
+            };
         }
+    };
+
+    let finish = 1_000_000_000_000u64;
+    let repetitions = (finish - loop_info.start) / loop_info.length;
+
+    let mut jets = jets_vector.iter().cycle().skip(loop_info.jet as usize);
+    let mut rocks = rocks_vector.iter().cycle().skip(loop_info.start as usize);
+    let mut map = loop_info.border.into_iter().collect();
+
+    let init_height = get_highpoint(&map);
+
+    let remaining = finish - loop_info.start - loop_info.length * repetitions;
+    for _ in 0..remaining {
+        drop_next(&mut jets, &mut rocks, &mut map);
     }
-    println!("10000 : {}", known_states.len());
+
+    let final_height = get_highpoint(&map);
+
+    println!(
+        "{}",
+        loop_info.height + loop_info.increment * repetitions + final_height as u64
+            - init_height as u64
+    );
 }
 
 fn main() {
