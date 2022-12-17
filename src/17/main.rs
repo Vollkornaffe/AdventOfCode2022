@@ -1,4 +1,4 @@
-use std::{collections::HashSet, iter::repeat};
+use std::{collections::HashSet, hash::Hash, iter::repeat};
 
 use common::{read_lines, wait};
 
@@ -54,60 +54,126 @@ impl Rock {
     }
 }
 
+fn setup(lines: &[String]) -> (Vec<i32>, Vec<Rock>) {
+    (
+        lines
+            .first()
+            .unwrap()
+            .chars()
+            .map(|c| match c {
+                '>' => 1,
+                '<' => -1,
+                _ => unreachable!(),
+            })
+            .collect(),
+        vec![
+            Rock::minus(),
+            Rock::plus(),
+            Rock::angle(),
+            Rock::vertical(),
+            Rock::square(),
+        ],
+    )
+}
+
+fn get_highpoint(map: &HashSet<(i32, i32)>) -> i32 {
+    map.iter().map(|(_, y)| *y + 1).max().unwrap_or(0)
+}
+
+fn drop_next<'a>(
+    jets: &mut impl Iterator<Item = &'a i32>,
+    rocks: &mut impl Iterator<Item = &'a Rock>,
+    map: &mut HashSet<(i32, i32)>,
+) {
+    let highpoint = get_highpoint(&map);
+
+    let mut rock = Rock(
+        rocks
+            .next()
+            .unwrap()
+            .0
+            .iter()
+            .map(|(x, y)| (x + 2, y + highpoint + 3))
+            .collect(),
+    );
+
+    loop {
+        rock.try_move((*jets.next().unwrap(), 0), &map);
+        if rock.try_move((0, -1), &map) {
+            continue;
+        }
+        map.extend(rock.0.iter());
+        break;
+    }
+}
+
 fn solve_part_one(lines: &[String]) {
-    let jets: Vec<i32> = lines
-        .first()
-        .unwrap()
-        .chars()
-        .map(|c| match c {
-            '>' => 1,
-            '<' => -1,
-            _ => unreachable!(),
-        })
-        .collect();
-    let rocks = vec![
-        Rock::minus(),
-        Rock::plus(),
-        Rock::angle(),
-        Rock::vertical(),
-        Rock::square(),
-    ];
+    let (jets, rocks) = setup(lines);
 
     let mut jets = jets.iter().cycle();
     let mut rocks = rocks.iter().cycle();
-
     let mut map = HashSet::new();
 
-    let get_highpoint =
-        |map: &HashSet<(i32, i32)>| map.iter().map(|(_, y)| *y + 1).max().unwrap_or(0);
-
     for _ in 0..2022 {
-        let highpoint = get_highpoint(&map);
-
-        let mut rock = Rock(
-            rocks
-                .next()
-                .unwrap()
-                .0
-                .iter()
-                .map(|(x, y)| (x + 2, y + highpoint + 3))
-                .collect(),
-        );
-
-        loop {
-            rock.try_move((*jets.next().unwrap(), 0), &map);
-            if rock.try_move((0, -1), &map) {
-                continue;
-            }
-            map.extend(rock.0.iter());
-            break;
-        }
+        drop_next(&mut jets, &mut rocks, &mut map);
     }
 
     println!("{}", get_highpoint(&map));
 }
 
+fn find_border(map: &HashSet<(i32, i32)>) -> HashSet<(i32, i32)> {
+    let mut active = vec![(0, get_highpoint(map) + 1)];
+    let mut visited = HashSet::new();
+    let mut border = HashSet::new();
+
+    while !active.is_empty() {
+        let (x, y) = active.pop().unwrap();
+
+        if map.contains(&(x, y)) {
+            border.insert((x, y));
+        }
+
+        for (x, y) in [
+            (x - 1, y - 1),
+            (x + 1, y - 1),
+            (x - 1, y + 1),
+            (x + 1, y + 1),
+        ]
+        .into_iter()
+        {
+            if x < 0 || y < 0 || x > 6 || active.contains(&(x, y)) || visited.contains(&(x, y)) {
+                continue;
+            }
+            active.push((x, y));
+        }
+
+        visited.insert((x, y));
+    }
+
+    border
+}
+
+fn solve_part_two(lines: &[String]) {
+    let (jets, rocks) = setup(lines);
+
+    let mut jets = jets.iter().cycle();
+    let mut rocks = rocks.iter().cycle();
+    let mut map = HashSet::new();
+
+    for _ in 0..10000 {
+        for _ in 0..5 {
+            drop_next(&mut jets, &mut rocks, &mut map);
+        }
+        let border = find_border(&map);
+    }
+}
+
 fn main() {
+    println!("Part one:");
     solve_part_one(&read_lines("src/17/example").unwrap());
     solve_part_one(&read_lines("src/17/input").unwrap());
+
+    println!("Part two:");
+    solve_part_two(&read_lines("src/17/example").unwrap());
+    solve_part_two(&read_lines("src/17/input").unwrap());
 }
