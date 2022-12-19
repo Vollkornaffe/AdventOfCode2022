@@ -1,14 +1,5 @@
 use common::read_lines;
 
-struct Blueprint {
-    ore_robot_ore_cost: usize,
-    clay_robot_ore_cost: usize,
-    obsidian_robot_ore_cost: usize,
-    obsidian_robot_clay_cost: usize,
-    geode_robot_ore_cost: usize,
-    geode_robot_obsidian_cost: usize,
-}
-
 fn step(costs: &[[usize; 3]; 4], t: usize, resources: [usize; 4], robots: [usize; 4]) -> usize {
     if t == 0 {
         //print!("{},", resources[3]);
