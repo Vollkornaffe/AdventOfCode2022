@@ -138,33 +138,6 @@ fn solve_part_one(setup: Setup) {
                         }
                     };
                     if setup.map[&next] {
-                        println!("{:?}", position);
-                        for y in -20..20 {
-                            for x in -20..20 {
-                                let x = position.0 + x;
-                                let y = position.1 + y;
-                                if (x, y) == position {
-                                    match orientation {
-                                        0 => print!(">"),
-                                        1 => print!("V"),
-                                        2 => print!("<"),
-                                        3 => print!("A"),
-                                        _ => unreachable!(),
-                                    }
-                                } else if let Some(&free) = setup.map.get(&(x, y)) {
-                                    if free {
-                                        print!(".");
-                                    } else {
-                                        print!("#");
-                                    }
-                                } else {
-                                    print!(" ");
-                                }
-                            }
-                            println!();
-                        }
-                        wait();
-
                         position = next;
                     } else {
                         break;
