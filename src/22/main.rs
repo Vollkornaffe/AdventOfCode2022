@@ -16,7 +16,7 @@ struct Setup {
 
 fn parse_setup(lines: &[String]) -> Setup {
     let map =
-        lines[0..lines.len() - 3]
+        lines[0..lines.len() - 2]
             .iter()
             .enumerate()
             .fold(HashMap::new(), |map, (y, line)| {
