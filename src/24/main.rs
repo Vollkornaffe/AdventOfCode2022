@@ -161,12 +161,12 @@ fn solve(start: Vec2, end: Vec2, start_state: State) -> (usize, State) {
             ]
             .into_iter()
             .filter(|&position| {
-                position != start
-                    && (position == end
-                        || (position.x > 0
-                            && position.y > 0
-                            && position.x < setup.size.x - 1
-                            && position.y < setup.size.y - 1))
+                position == start
+                    || position == end
+                    || (position.x > 0
+                        && position.y > 0
+                        && position.x < setup.size.x - 1
+                        && position.y < setup.size.y - 1)
             })
             .filter(|position| {
                 setup
@@ -200,7 +200,38 @@ fn solve_part_one(setup: Setup) {
     println!("{steps}");
 }
 
+fn solve_part_two(setup: Setup) {
+    let start = setup.start();
+    let end = setup.end();
+
+    let (steps, state) = solve(
+        start,
+        end,
+        State {
+            position: setup.start(),
+            setup,
+        },
+    );
+
+    let mut total_steps = steps;
+    println!("{total_steps}");
+    let (steps, state) = solve(end, start, state);
+
+    total_steps += steps;
+    println!("{total_steps}");
+
+    let (steps, state) = solve(start, end, state);
+    total_steps += steps;
+
+    println!("{total_steps}");
+}
+
 fn main() {
-    solve_part_one(Setup::new(&read_lines("src/24/example").unwrap()));
-    solve_part_one(Setup::new(&read_lines("src/24/input").unwrap()));
+    //println!("Part one:");
+    //solve_part_one(Setup::new(&read_lines("src/24/example").unwrap()));
+    //solve_part_one(Setup::new(&read_lines("src/24/input").unwrap()));
+
+    println!("Part two:");
+    solve_part_two(Setup::new(&read_lines("src/24/example").unwrap()));
+    solve_part_two(Setup::new(&read_lines("src/24/input").unwrap()));
 }
