@@ -54,7 +54,7 @@ impl Setup {
                                         velocity: Vec2 { x: 0, y: -1 },
                                     });
                                 }
-                                'V' => {
+                                'v' => {
                                     blizzards.push(Blizzard {
                                         position,
                                         velocity: Vec2 { x: 0, y: 1 },
