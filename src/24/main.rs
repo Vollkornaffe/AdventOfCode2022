@@ -3,7 +3,7 @@ use std::{
     hash::Hash,
 };
 
-use common::{read_lines, wait};
+use common::read_lines;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 struct Vec2 {
@@ -116,53 +116,15 @@ impl Setup {
     }
 }
 
-fn debug(steps: usize, position: Vec2, setup: &Setup) {
-    println!("{steps}");
-    for y in 0..setup.size.y {
-        for x in 0..setup.size.x {
-            if position.x == x && position.y == y {
-                print!("O");
-            } else if let Some(Blizzard { velocity, .. }) = setup
-                .blizzards
-                .iter()
-                .find(|blizzard| blizzard.position == Vec2 { x, y })
-            {
-                print!(
-                    "{}",
-                    match velocity {
-                        Vec2 { x: 0, y: -1 } => '^',
-                        Vec2 { x: 0, y: 1 } => 'V',
-                        Vec2 { x: -1, y: 0 } => '<',
-                        Vec2 { x: 1, y: 0 } => '>',
-                        _ => unreachable!(),
-                    }
-                );
-            } else {
-                print!(" ");
-            }
-        }
-        println!();
-    }
-    wait();
-}
-
-fn solve_part_one(initial_setup: Setup) {
+fn solve(start: Vec2, end: Vec2, start_state: State) -> (usize, State) {
     let mut seen_states = HashSet::new();
     let mut active = VecDeque::new();
 
-    active.push_back((
-        0usize,
-        Vec::new(),
-        State {
-            position: initial_setup.start(),
-            setup: initial_setup.clone(),
-        },
-    ));
+    active.push_back((0, start_state));
 
-    while !active.is_empty() {
+    loop {
         let (
             steps,
-            mut path,
             State {
                 position,
                 mut setup,
@@ -176,21 +138,17 @@ fn solve_part_one(initial_setup: Setup) {
             continue;
         }
 
-        if position == setup.end() {
-            println!("{steps}");
+        assert!(setup
+            .blizzards
+            .iter()
+            .find(|blizzard| blizzard.position == position)
+            .is_none());
 
-            let mut debug_setup = initial_setup;
-            for position in path {
-                debug(steps, position, &debug_setup);
-                debug_setup.move_blizzards();
-            }
-
-            return;
+        if position == end {
+            return (steps, State { position, setup });
         }
 
         setup.move_blizzards();
-
-        path.push(position);
 
         let Vec2 { x, y } = position;
         active.extend(
@@ -203,8 +161,8 @@ fn solve_part_one(initial_setup: Setup) {
             ]
             .into_iter()
             .filter(|&position| {
-                position != setup.start()
-                    && (position == setup.end()
+                position != start
+                    && (position == end
                         || (position.x > 0
                             && position.y > 0
                             && position.x < setup.size.x - 1
@@ -220,7 +178,6 @@ fn solve_part_one(initial_setup: Setup) {
             .map(|position| {
                 (
                     steps + 1,
-                    path.clone(),
                     State {
                         position,
                         setup: setup.clone(),
@@ -229,6 +186,18 @@ fn solve_part_one(initial_setup: Setup) {
             }),
         );
     }
+}
+
+fn solve_part_one(setup: Setup) {
+    let (steps, _) = solve(
+        setup.start(),
+        setup.end(),
+        State {
+            position: setup.start(),
+            setup,
+        },
+    );
+    println!("{steps}");
 }
 
 fn main() {
