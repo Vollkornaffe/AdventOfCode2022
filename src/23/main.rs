@@ -26,69 +26,78 @@ fn parse_elves(lines: &[String]) -> HashSet<(isize, isize)> {
         })
 }
 
+fn get_proposal(
+    elves: &HashSet<(isize, isize)>,
+    offset: usize,
+    (x, y): (isize, isize),
+) -> Option<(isize, isize)> {
+    use Direction::*;
+    let dirs = [N, S, W, E];
+
+    let mut dirs = dirs.iter().cycle().skip(offset);
+
+    if [
+        (x - 1, y - 1),
+        (x, y - 1),
+        (x + 1, y - 1),
+        (x - 1, y),
+        (x + 1, y),
+        (x - 1, y + 1),
+        (x, y + 1),
+        (x + 1, y + 1),
+    ]
+    .iter()
+    .all(|p| !elves.contains(p))
+    {
+        return None;
+    }
+
+    for _ in 0..4 {
+        let (propose, need_to_be_free) = match dirs.next().unwrap() {
+            N => ((x, y - 1), [(x - 1, y - 1), (x, y - 1), (x + 1, y - 1)]),
+            S => ((x, y + 1), [(x - 1, y + 1), (x, y + 1), (x + 1, y + 1)]),
+            W => ((x - 1, y), [(x - 1, y - 1), (x - 1, y), (x - 1, y + 1)]),
+            E => ((x + 1, y), [(x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]),
+        };
+
+        if need_to_be_free.iter().all(|p| !elves.contains(p)) {
+            return Some(propose);
+        }
+    }
+
+    None
+}
+
+fn step(elves: &HashSet<(isize, isize)>, offset: usize) -> HashSet<(isize, isize)> {
+    let mut targets = HashMap::new();
+    for &elve in elves {
+        if let Some(proposal) = get_proposal(&elves, offset, elve) {
+            targets.entry(proposal).and_modify(|e| *e += 1).or_insert(1);
+        }
+    }
+
+    elves
+        .iter()
+        .map(|&elve| {
+            let Some(proposal) = get_proposal(&elves, offset, elve) else {
+                    return elve;
+                };
+            if targets[&proposal] == 1 {
+                proposal
+            } else {
+                elve
+            }
+        })
+        .collect()
+}
+
 fn solve_part_one(lines: &[String]) {
     let mut elves = parse_elves(lines);
 
-    use Direction::*;
-    let dirs = [N, S, W, E];
     let mut offset = 0;
 
-    let get_proposal = |elves: &HashSet<(isize, isize)>, offset, (x, y)| {
-        let mut dirs = dirs.iter().cycle().skip(offset);
-
-        if [
-            (x - 1, y - 1),
-            (x, y - 1),
-            (x + 1, y - 1),
-            (x - 1, y),
-            (x + 1, y),
-            (x - 1, y + 1),
-            (x, y + 1),
-            (x + 1, y + 1),
-        ]
-        .iter()
-        .all(|p| !elves.contains(p))
-        {
-            return None;
-        }
-
-        for _ in 0..4 {
-            let (propose, need_to_be_free) = match dirs.next().unwrap() {
-                N => ((x, y - 1), [(x - 1, y - 1), (x, y - 1), (x + 1, y - 1)]),
-                S => ((x, y + 1), [(x - 1, y + 1), (x, y + 1), (x + 1, y + 1)]),
-                W => ((x - 1, y), [(x - 1, y - 1), (x - 1, y), (x - 1, y + 1)]),
-                E => ((x + 1, y), [(x + 1, y - 1), (x + 1, y), (x + 1, y + 1)]),
-            };
-
-            if need_to_be_free.iter().all(|p| !elves.contains(p)) {
-                return Some(propose);
-            }
-        }
-        None
-    };
-
     for _ in 0..10 {
-        let mut targets = HashMap::new();
-        for &elve in &elves {
-            if let Some(proposal) = get_proposal(&elves, offset, elve) {
-                targets.entry(proposal).and_modify(|e| *e += 1).or_insert(1);
-            }
-        }
-
-        elves = elves
-            .iter()
-            .map(|&elve| {
-                let Some(proposal) = get_proposal(&elves, offset, elve) else {
-                    return elve;
-                };
-                if targets[&proposal] == 1 {
-                    proposal
-                } else {
-                    elve
-                }
-            })
-            .collect();
-
+        elves = step(&elves, offset);
         offset += 1;
         offset %= 4;
     }
@@ -108,7 +117,26 @@ fn solve_part_one(lines: &[String]) {
     println!("{free}");
 }
 
-fn solve_part_two(lines: &[String]) {}
+fn solve_part_two(lines: &[String]) {
+    let mut elves = parse_elves(lines);
+    let mut offset = 0;
+
+    let mut i = 1;
+    loop {
+        let prev_elves = elves.clone();
+        elves = step(&elves, offset);
+
+        if prev_elves == elves {
+            break;
+        }
+
+        i += 1;
+
+        offset += 1;
+        offset %= 4;
+    }
+    println!("{i}");
+}
 
 fn main() {
     println!("Part one:");
