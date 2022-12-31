@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    collections::{HashSet, VecDeque},
+    hash::Hash,
+};
 
 use common::{read_lines, wait};
 
@@ -144,59 +147,76 @@ fn debug(steps: usize, position: Vec2, setup: &Setup) {
 }
 
 fn solve_part_one(setup: Setup) {
-    fn search(
-        seen_states: &mut HashSet<State>,
-        steps: usize,
-        position: Vec2,
-        mut setup: Setup,
-    ) -> Option<usize> {
-        //debug(steps, position, &setup);
+    let mut seen_states = HashSet::new();
+    let mut active = VecDeque::new();
 
-        if position == setup.end() {
-            println!("found one with {steps} steps");
-            return Some(steps);
-        }
+    active.push_back((
+        0usize,
+        State {
+            position: setup.start(),
+            setup: setup.clone(),
+        },
+    ));
+
+    while !active.is_empty() {
+        let (
+            steps,
+            State {
+                position,
+                mut setup,
+            },
+        ) = active.pop_front().unwrap();
 
         if !seen_states.insert(State {
             position,
             setup: setup.clone(),
         }) {
-            return None;
+            continue;
+        }
+
+        if position == setup.end() {
+            println!("{steps}");
+            return;
         }
 
         setup.move_blizzards();
 
         let Vec2 { x, y } = position;
-        [
-            Vec2 { x: x - 1, y },
-            Vec2 { x: x + 1, y },
-            Vec2 { x, y: y - 1 },
-            Vec2 { x, y: y + 1 },
-            Vec2 { x, y },
-        ]
-        .into_iter()
-        .filter(|&position| {
-            position != setup.start()
-                && (position == setup.end()
-                    || (position.x > 0
-                        && position.y > 0
-                        && position.x < setup.size.x - 1
-                        && position.y < setup.size.y - 1))
-        })
-        .filter(|position| {
-            setup
-                .blizzards
-                .iter()
-                .find(|blizzard| blizzard.position == *position)
-                .is_none()
-        })
-        .filter_map(|position| search(seen_states, steps + 1, position, setup.clone()))
-        .min()
+        active.extend(
+            [
+                Vec2 { x: x - 1, y },
+                Vec2 { x: x + 1, y },
+                Vec2 { x, y: y - 1 },
+                Vec2 { x, y: y + 1 },
+                Vec2 { x, y },
+            ]
+            .into_iter()
+            .filter(|&position| {
+                position != setup.start()
+                    && (position == setup.end()
+                        || (position.x > 0
+                            && position.y > 0
+                            && position.x < setup.size.x - 1
+                            && position.y < setup.size.y - 1))
+            })
+            .filter(|position| {
+                setup
+                    .blizzards
+                    .iter()
+                    .find(|blizzard| blizzard.position == *position)
+                    .is_none()
+            })
+            .map(|position| {
+                (
+                    steps + 1,
+                    State {
+                        position,
+                        setup: setup.clone(),
+                    },
+                )
+            }),
+        );
     }
-
-    let mut seen_states = HashSet::new();
-
-    println!("{:?}", search(&mut seen_states, 0, setup.start(), setup));
 }
 
 fn main() {
