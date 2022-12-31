@@ -146,21 +146,23 @@ fn debug(steps: usize, position: Vec2, setup: &Setup) {
     wait();
 }
 
-fn solve_part_one(setup: Setup) {
+fn solve_part_one(initial_setup: Setup) {
     let mut seen_states = HashSet::new();
     let mut active = VecDeque::new();
 
     active.push_back((
         0usize,
+        Vec::new(),
         State {
-            position: setup.start(),
-            setup: setup.clone(),
+            position: initial_setup.start(),
+            setup: initial_setup.clone(),
         },
     ));
 
     while !active.is_empty() {
         let (
             steps,
+            mut path,
             State {
                 position,
                 mut setup,
@@ -176,10 +178,19 @@ fn solve_part_one(setup: Setup) {
 
         if position == setup.end() {
             println!("{steps}");
+
+            let mut debug_setup = initial_setup;
+            for position in path {
+                debug(steps, position, &debug_setup);
+                debug_setup.move_blizzards();
+            }
+
             return;
         }
 
         setup.move_blizzards();
+
+        path.push(position);
 
         let Vec2 { x, y } = position;
         active.extend(
@@ -209,6 +220,7 @@ fn solve_part_one(setup: Setup) {
             .map(|position| {
                 (
                     steps + 1,
+                    path.clone(),
                     State {
                         position,
                         setup: setup.clone(),
